@@ -1,43 +1,92 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AnonChat Pro</title>
-  <style>
-    body { margin:0; font-family:Arial; background:#36393f; color:white; }
-    .container { display:flex; height:100vh; }
-    .sidebar { width:220px; background:#2f3136; display:flex; flex-direction:column; padding:10px; overflow-y:auto; }
-    .sidebar button { background:#7289da; color:white; border:none; border-radius:5px; padding:10px; margin-bottom:5px; cursor:pointer; }
-    .chatArea { flex:1; display:flex; flex-direction:column; }
-    #chat { flex:1; padding:10px; overflow-y:auto; }
-    .inputBox { display:flex; padding:10px; background:#40444b; }
-    input { flex:1; padding:10px; border-radius:5px; border:none; background:#303339; color:white; }
-    button#sendBtn { margin-left:10px; padding:10px; border:none; border-radius:5px; background:#7289da; color:white; cursor:pointer; }
-    .msg { margin:8px 0; display:flex; align-items:center; }
-    .msg img { width:30px; height:30px; border-radius:50%; margin-right:5px; }
-    .user { color:#7289da; font-weight:bold; margin-right:5px; }
-    .thread { background:#40444b; color:white; padding:5px; margin-bottom:5px; border-radius:5px; cursor:pointer; }
-    .thread.active { background:#5865f2; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anonymous Chat</title>
+<style>
+body, html {margin:0;padding:0;height:100%;background:#2f3136;color:#ddd;font-family:"Segoe UI",Tahoma,Verdana,sans-serif;display:flex;flex-direction:column;}
+#container {display:flex;flex:1;overflow:hidden;}
+#sidebar {background:#202225;width:320px;display:flex;flex-direction:column;padding:10px;}
+#threadsList {flex:1;overflow-x:auto;white-space:nowrap;padding-bottom:10px;}
+.thread-item {display:inline-block;padding:8px 16px;margin-right:8px;background:#36393f;border-radius:8px;cursor:pointer;user-select:none;color:white;font-weight:600;}
+.thread-item.active {background:#5865f2;}
+#newThreadBtn {background:#5865f2;border:none;border-radius:8px;color:white;padding:8px;cursor:pointer;margin-bottom:10px;}
+#adminToggleBtn {background:#f5c518;border:none;border-radius:8px;color:#222;padding:8px;cursor:pointer;font-weight:700;margin-top:10px;}
+#chat {flex:1;background:#36393f;padding:15px;overflow-y:auto;display:flex;flex-direction:column;}
+#messageForm {display:flex;padding:10px;background:#202225;}
+#messageInput {flex:1;padding:8px 12px;border-radius:8px;border:none;font-size:16px;background:#40444b;color:white;}
+#sendBtn {background:#5865f2;border:none;color:white;padding:8px 16px;border-radius:8px;margin-left:8px;cursor:pointer;}
+.message {display:flex;margin-bottom:10px;}
+.avatar {width:40px;height:40px;border-radius:50%;margin-right:12px;flex-shrink:0;}
+.message-content {max-width:80%;}
+.message-header {font-size:14px;margin-bottom:4px;}
+.username {font-weight:700;color:#fff;}
+.rank.NewChatter { color:#bbb; }
+.rank.AdvancedChatter { color:#43b581; }
+.rank.ImageMaster { color:#faa61a; }
+.rank.PurplePack { color:#9b59b6; }
+.timestamp {margin-left:8px;font-size:12px;color:#999;}
+.message-text {background:#40444b;padding:10px;border-radius:8px;word-wrap:break-word;}
+#deleteThreadBtn {background:#ed4245;border:none;border-radius:8px;color:white;padding:6px 12px;cursor:pointer;margin-top:10px;display:none;}
+#uploadLabel {margin-top:10px;color:#ccc;font-size:14px;}
+#uploadInput {margin-top:4px;}
+#uploadStatus {color:#faa61a;font-size:14px;margin-top:4px;}
+#adminPanel {position:fixed;top:10%;left:50%;transform:translateX(-50%);background:#202225;color:white;border-radius:12px;padding:20px;max-width:600px;max-height:70vh;overflow-y:auto;display:none;z-index:1000;box-shadow:0 0 20px rgba(0,0,0,0.8);}
+#adminPanel h2 {margin-top:0;}
+#adminPanel table {width:100%;border-collapse:collapse;margin-bottom:12px;}
+#adminPanel th,#adminPanel td {border:1px solid #555;padding:8px;text-align:left;}
+#adminPanel button {background:#ed4245;border:none;border-radius:8px;color:white;padding:6px 12px;cursor:pointer;}
+#closeAdminBtn {background:#5865f2;border:none;border-radius:8px;color:white;padding:6px 12px;cursor:pointer;float:right;}
+#banUserSection,#banIpSection {margin-bottom:12px;}
+#banUserInput,#banIpInput {padding:6px;border-radius:6px;border:none;width:60%;margin-right:8px;}
+</style>
 </head>
 <body>
-<div class="container">
-  <div class="sidebar" id="threadsList">
-    <button onclick="createThreadPrompt()">+ New Thread</button>
+
+<div id="container">
+  <div id="sidebar">
+    <button id="newThreadBtn">+ New Thread</button>
+    <div id="threadsList"></div>
+    <button id="adminToggleBtn">Open Admin Panel</button>
   </div>
-  <div class="chatArea">
-    <div id="chat"></div>
-    <div class="inputBox">
-      <input id="message" placeholder="Message..." />
-      <button id="sendBtn">Send</button>
-    </div>
-  </div>
+  <div id="chat"></div>
 </div>
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, update, get, child } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+<form id="messageForm">
+  <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off"/>
+  <button type="submit" id="sendBtn">Send</button>
+</form>
 
+<button id="deleteThreadBtn">Delete Thread</button>
+
+<label id="uploadLabel" for="uploadInput">Upload Profile Picture (max 5, max 2MB each)</label>
+<input type="file" id="uploadInput" accept="image/*"/>
+<div id="uploadStatus"></div>
+
+<div id="adminPanel">
+  <button id="closeAdminBtn">Close</button>
+  <h2>Admin Panel</h2>
+  <div id="banUserSection">
+    <input type="text" id="banUserInput" placeholder="User ID to ban/unban"/>
+    <button id="banUserBtn">Ban/Unban User</button>
+  </div>
+  <div id="banIpSection">
+    <input type="text" id="banIpInput" placeholder="IP to ban/unban"/>
+    <button id="banIpBtn">Ban/Unban IP</button>
+  </div>
+  <h3>Threads</h3>
+  <table>
+    <thead><tr><th>ID</th><th>Title</th><th>Creator</th><th>Action</th></tr></thead>
+    <tbody id="threadsTableBody"></tbody>
+  </table>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyAdn7b68mCxlF0ckfz4PBbTb5rTEBaNGAE",
   authDomain: "my-awsome-project-75817.firebaseapp.com",
@@ -47,133 +96,200 @@ const firebaseConfig = {
   messagingSenderId: "1016915717130",
   appId: "1:1016915717130:web:2ee35fdc362606238343f3"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// ----- User Setup -----
-let userId = localStorage.getItem("anonID");
-let currentUser = {};
-
-async function initUser() {
-  if (!userId) {
-    userId = Math.floor(Math.random() * 1000000) + 1;
-    localStorage.setItem("anonID", userId);
-    const avatars = [
-      "https://i.pravatar.cc/50?img=1",
-      "https://i.pravatar.cc/50?img=2",
-      "https://i.pravatar.cc/50?img=3",
-      "https://i.pravatar.cc/50?img=4",
-      "https://i.pravatar.cc/50?img=5"
-    ];
-    const avatar = avatars[Math.floor(Math.random() * avatars.length)];
-    await set(ref(db, `users/${userId}`), {
-      avatar,
-      rank: "New Chatter",
-      messagesCount: 0,
-      lastMessageTime: 0
-    });
-  }
-  const snapshot = await get(ref(db, `users/${userId}`));
-  currentUser = snapshot.val();
-}
-
-await initUser();
-
-// ----- Threads -----
-let currentThreadId = null;
+// Elements
+const newThreadBtn = document.getElementById("newThreadBtn");
 const threadsList = document.getElementById("threadsList");
+const chat = document.getElementById("chat");
+const messageForm = document.getElementById("messageForm");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const deleteThreadBtn = document.getElementById("deleteThreadBtn");
+const uploadInput = document.getElementById("uploadInput");
+const uploadStatus = document.getElementById("uploadStatus");
 
-async function loadThreads() {
-  threadsList.innerHTML = '<button onclick="createThreadPrompt()">+ New Thread</button>';
-  const snapshot = await get(ref(db, "threads"));
-  if(snapshot.exists()) {
-    Object.entries(snapshot.val()).forEach(([id, data]) => {
-      const div = document.createElement("div");
-      div.className = "thread";
-      div.textContent = data.title;
-      div.onclick = () => selectThread(id, div);
-      threadsList.appendChild(div);
-    });
-  }
+// Admin elements
+const adminToggleBtn = document.getElementById("adminToggleBtn");
+const adminPanel = document.getElementById("adminPanel");
+const closeAdminBtn = document.getElementById("closeAdminBtn");
+const threadsTableBody = document.getElementById("threadsTableBody");
+const banUserBtn = document.getElementById("banUserBtn");
+const banUserIdInput = document.getElementById("banUserInput");
+const banIpBtn = document.getElementById("banIpBtn");
+const banIpInput = document.getElementById("banIpInput");
+
+// Base64 Admin Password
+const ADMIN_PW_BASE64 = btoa("pheonix1133");
+
+// Chat state
+let currentUser = { id: Math.floor(Math.random()*1e6), messagesCount:0, imagesCount:0, uploadedImages:[], avatar:null, rank:"NewChatter" };
+let currentThreadId = null;
+let lastMessageTime = 0;
+
+// Threads storage
+async function loadThreads(){
+  threadsList.innerHTML = "";
+  const snap = await db.ref("threads").get();
+  if(!snap.exists()) return;
+  Object.entries(snap.val()).forEach(([tid,thread])=>{
+    const div = document.createElement("div");
+    div.textContent = thread.title;
+    div.classList.add("thread-item");
+    div.onclick = async()=>{
+      if(thread.password){
+        const pw = prompt("Enter thread password:");
+        if(pw!==thread.password){alert("Wrong password");return;}
+      }
+      currentThreadId=tid;
+      loadMessages(tid);
+      deleteThreadBtn.style.display="inline-block";
+      document.querySelectorAll(".thread-item").forEach(t=>t.classList.remove("active"));
+      div.classList.add("active");
+    };
+    threadsList.appendChild(div);
+  });
 }
+
+// Load messages
+async function loadMessages(tid){
+  chat.innerHTML="";
+  const snap = await db.ref("messages/"+tid).get();
+  if(!snap.exists()) return;
+  Object.entries(snap.val()).forEach(([mid,msg])=>{
+    addMessageToChat(msg);
+  });
+}
+
+// Add message to chat
+function addMessageToChat(msg){
+  const div=document.createElement("div");
+  div.classList.add("message");
+  const avatar=document.createElement("img");
+  avatar.classList.add("avatar");
+  avatar.src=msg.avatar||"https://via.placeholder.com/40";
+  const content=document.createElement("div");
+  content.classList.add("message-content");
+  content.innerHTML=`<div class="message-header"><span class="username rank ${msg.rank}">${msg.rank}#${msg.id}</span><span class="timestamp">${new Date(msg.time).toLocaleTimeString()}</span></div><div class="message-text">${msg.text}</div>`;
+  div.appendChild(avatar);
+  div.appendChild(content);
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+// Send message
+messageForm.addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  if(!currentThreadId){alert("Select a thread");return;}
+  const now=Date.now();
+  if(now-lastMessageTime<1000){alert("Slow down");return;}
+  lastMessageTime=now;
+  const text=messageInput.value.trim();
+  if(!text) return;
+  const msg={id:currentUser.id,text,avatar:currentUser.avatar,rank:currentUser.rank,time:now};
+  const newRef=db.ref("messages/"+currentThreadId).push();
+  await newRef.set(msg);
+  addMessageToChat(msg);
+  currentUser.messagesCount++;
+  updateRank();
+  messageInput.value="";
+});
+
+// Update rank
+function updateRank(){
+  if(currentUser.messagesCount>=1000) currentUser.rank="PurplePack";
+  else if(currentUser.imagesCount>=700) currentUser.rank="ImageMaster";
+  else if(currentUser.messagesCount>=300) currentUser.rank="AdvancedChatter";
+  else currentUser.rank="NewChatter";
+}
+
+// Upload avatar
+uploadInput.addEventListener("change",async()=>{
+  const files=Array.from(uploadInput.files);
+  if(files.length + currentUser.uploadedImages.length>5){alert("Max 5 images"); return;}
+  for(const f of files){
+    if(f.size>2*1024*1024){alert("Max 2MB");return;}
+    const base64=await fileToBase64(f);
+    currentUser.uploadedImages.push(base64);
+    currentUser.avatar=base64;
+    currentUser.imagesCount++;
+    updateRank();
+  }
+  uploadStatus.textContent="Upload complete";
+  uploadInput.value="";
+});
+
+function fileToBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=err=>rej(err);r.readAsDataURL(file);});}
+
+// New thread
+newThreadBtn.addEventListener("click",async()=>{
+  const title=prompt("Thread title:");
+  if(!title) return;
+  const password=prompt("Optional thread password (leave blank for none):")||"";
+  const ref=db.ref("threads").push();
+  await ref.set({title,password,creator:currentUser.id,createdAt:Date.now()});
+  loadThreads();
+});
+
+// Delete thread
+deleteThreadBtn.addEventListener("click",async()=>{
+  if(!currentThreadId) return;
+  if(!confirm("Delete this thread and all messages?")) return;
+  await db.ref("threads/"+currentThreadId).remove();
+  await db.ref("messages/"+currentThreadId).remove();
+  currentThreadId=null;
+  chat.innerHTML="";
+  deleteThreadBtn.style.display="none";
+  loadThreads();
+});
+
+// Admin panel
+adminToggleBtn.addEventListener("click",async()=>{
+  if(adminPanel.style.display==="block"){adminPanel.style.display="none";return;}
+  const pw=prompt("Enter admin password:");
+  if(!pw) return;
+  if(btoa(pw)===ADMIN_PW_BASE64){adminPanel.style.display="block";loadAdminData();}
+  else alert("Wrong admin password");
+});
+
+closeAdminBtn.addEventListener("click",()=>adminPanel.style.display="none");
+
+async function loadAdminData(){
+  threadsTableBody.innerHTML="";
+  const snap=await db.ref("threads").get();
+  if(!snap.exists()) return;
+  Object.entries(snap.val()).forEach(([tid,thread])=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${tid}</td><td>${thread.title}</td><td>${thread.creator}</td><td><button>Delete</button></td>`;
+    tr.querySelector("button").onclick=async()=>{
+      if(!confirm("Delete thread?")) return;
+      await db.ref("threads/"+tid).remove();
+      await db.ref("messages/"+tid).remove();
+      loadAdminData();
+    };
+    threadsTableBody.appendChild(tr);
+  });
+}
+
+// Ban/unban user
+banUserBtn.addEventListener("click",async()=>{
+  const uid=banUserIdInput.value.trim();
+  if(!uid) return alert("Enter user ID");
+  const snap=await db.ref("users/"+uid).get();
+  if(!snap.exists()) return alert("User not found");
+  const banned=snap.val().banned||false;
+  await db.ref("users/"+uid).update({banned:!banned});
+  alert(`User ${uid} is now ${banned?"unbanned":"banned"}`);
+  banUserIdInput.value="";
+});
+
+// Placeholder for IP ban
+banIpBtn.addEventListener("click",()=>alert("IP ban requires backend, not implemented"));
+
+// Init
 loadThreads();
 
-function createThreadPrompt() {
-  const title = prompt("Thread title:");
-  if(title) {
-    const threadId = "thread_" + Date.now();
-    set(ref(db, `threads/${threadId}`), { title, creatorId: userId, timestamp: Date.now() });
-    loadThreads();
-  }
-}
-
-function selectThread(threadId, divElement) {
-  currentThreadId = threadId;
-  document.querySelectorAll(".thread").forEach(el => el.classList.remove("active"));
-  divElement.classList.add("active");
-  loadMessages();
-}
-
-// ----- Messages -----
-const chat = document.getElementById("chat");
-const input = document.getElementById("message");
-const sendBtn = document.getElementById("sendBtn");
-
-let messageListener = null;
-
-async function loadMessages() {
-  chat.innerHTML = "";
-  if(!currentThreadId) return;
-
-  if(messageListener) messageListener(); // remove previous listener
-
-  const messagesRef = ref(db, `messages/${currentThreadId}`);
-  messageListener = onChildAdded(messagesRef, snapshot => {
-    const data = snapshot.val();
-    const msg = document.createElement("div");
-    msg.className = "msg";
-    msg.innerHTML = `
-      <img src="${data.avatar}">
-      <span class="user">#${data.user} (${data.rank}):</span>
-      <span class="text">${data.text}</span>
-    `;
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-  });
-}
-
-async function sendMessage() {
-  if(!currentThreadId) return alert("Select a thread first!");
-  if(input.value.trim() === "") return;
-
-  // Spam prevention
-  const now = Date.now();
-  if(now - currentUser.lastMessageTime < 5000) return alert("Wait 5 seconds between messages");
-
-  // Post message
-  const msgRef = ref(db, `messages/${currentThreadId}`);
-  push(msgRef, {
-    user: userId,
-    text: input.value,
-    avatar: currentUser.avatar,
-    rank: currentUser.rank,
-    timestamp: Date.now()
-  });
-
-  // Update user data
-  currentUser.lastMessageTime = now;
-  currentUser.messagesCount += 1;
-
-  // Rank upgrade
-  if(currentUser.messagesCount >= 20) currentUser.rank = "Advanced Chatter";
-  update(ref(db, `users/${userId}`), currentUser);
-
-  input.value = "";
-}
-
-sendBtn.onclick = sendMessage;
-input.addEventListener("keypress", e => { if(e.key === "Enter") sendMessage(); });
 </script>
 </body>
 </html>
