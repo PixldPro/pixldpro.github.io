@@ -176,7 +176,7 @@ function addMessageToChat(msg){
   div.classList.add("message");
   const avatar=document.createElement("img");
   avatar.classList.add("avatar");
-  avatar.src=msg.avatar||"https://via.placeholder.com/40";
+  avatar.src=msg.avatar||"https://i.pinimg.com/originals/d7/95/c3/d795c373a0539e64c7ee69bb0af3c5c3.jpg?nii=t";
   const content=document.createElement("div");
   content.classList.add("message-content");
   content.innerHTML=`<div class="message-header"><span class="username rank ${msg.rank}">${msg.rank}#${msg.id}</span><span class="timestamp">${new Date(msg.time).toLocaleTimeString()}</span></div><div class="message-text">${msg.text}</div>`;
